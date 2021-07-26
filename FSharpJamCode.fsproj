@@ -15,6 +15,12 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Reference Include="NaughtyAttributes.Core">
+      <HintPath>..\FSharpJam\Library\ScriptAssemblies\NaughtyAttributes.Core.dll</HintPath>
+    </Reference>
+    <Reference Include="NaughtyAttributes.Editor">
+      <HintPath>..\FSharpJam\Library\ScriptAssemblies\NaughtyAttributes.Editor.dll</HintPath>
+    </Reference>
     <Reference Include="UniRx">
       <HintPath>..\FSharpJam\Library\ScriptAssemblies\UniRx.dll</HintPath>
     </Reference>

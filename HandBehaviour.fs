@@ -3,6 +3,7 @@
 open UnityEngine
 open UniRx
 open System.Collections.Generic
+open NaughtyAttributes
 
 type Hand = 
 | Left = 0
@@ -44,15 +45,20 @@ type HandBehaviour() =
     inherit MonoBehaviour()
     [<DefaultValue; SerializeField>]
     val mutable private hand : Hand
-    [<DefaultValue; SerializeField>]
+    [<DefaultValue; ShowNonSerializedField>]
     val mutable private grabbable : Grabbable
     let mutable handState = HandState.Open
     let maybeGrabbable g = if g = Unchecked.defaultof<Grabbable> then None else Some g
+    [<ShowNativeProperty>]
+    member private this.HandState = handState.ToString()
     member public this.OnTriggerGripDown() = 
         let hs, action = HandState.triggerGripDown handState (maybeGrabbable this.grabbable)
         handState <- hs
         match action with
-        | Some (HandState.Grab g) -> g.transform.SetParent(this.gameObject.transform, true)
+        | Some (HandState.Grab g) -> 
+            g.transform.SetParent(this.gameObject.transform, true)
+            let rb = g.GetComponent<Rigidbody>()
+            GameObject.Destroy(rb)
         | _ -> ()
         Debug.Log($"OnTriggerGripDown() {this.hand}")
         ()
@@ -62,6 +68,9 @@ type HandBehaviour() =
         match action with
         | Some (HandState.Release g) -> 
             g.transform.SetParent(null, true)
+            let rb = g.gameObject.AddComponent<Rigidbody>()
+            rb.isKinematic <- true
+            rb.useGravity <- false
             handState <- HandState.releaseFinished handState
         | _ -> ()
         Debug.Log($"OnTriggerGripUp() {this.hand}")
@@ -71,6 +80,6 @@ type HandBehaviour() =
             colliders
             |> Seq.map (fun x -> x.GetComponentInParent<Grabbable>())
             |> Seq.filter (fun x -> x <> Unchecked.defaultof<Grabbable>)
-        let best = if Seq.isEmpty candidates then Unchecked.defaultof<Grabbable> else Seq.head candidates
-        this.grabbable <- best
+        this.grabbable <- if Seq.isEmpty candidates then Unchecked.defaultof<Grabbable> else Seq.head candidates
+        // Debug.Log($"UpdateBestGrabCandidate() - grabbable = {this.grabbable}")
         ()
