@@ -80,6 +80,11 @@ type HandBehaviour() =
             colliders
             |> Seq.map (fun x -> x.GetComponentInParent<Grabbable>())
             |> Seq.filter (fun x -> x <> Unchecked.defaultof<Grabbable>)
+        let newBest = if Seq.isEmpty candidates then Unchecked.defaultof<Grabbable> else Seq.head candidates
+        if (this.grabbable <> newBest) && (this.grabbable <> Unchecked.defaultof<Grabbable>)
+        then this.grabbable.gameObject.layer <- Utils.Layer.Default |> int
         this.grabbable <- if Seq.isEmpty candidates then Unchecked.defaultof<Grabbable> else Seq.head candidates
+        if this.grabbable <> Unchecked.defaultof<Grabbable>
+        then this.grabbable.gameObject.layer <- (match this.hand with | Hand.Left -> Utils.Layer.GrabbableHighlightL | Hand.Right -> Utils.Layer.GrabbableHighlightR) |> int
         // Debug.Log($"UpdateBestGrabCandidate() - grabbable = {this.grabbable}")
         ()
