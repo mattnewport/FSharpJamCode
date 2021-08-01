@@ -4,6 +4,7 @@ open UnityEngine
 open UniRx
 open System.Collections.Generic
 open NaughtyAttributes
+open Unity.Linq
 
 type Hand = 
 | Left = 0
@@ -13,32 +14,43 @@ module HandState =
     type HandAction = 
         | Grab of Grabbable
         | Release of Grabbable
+        | ForceRelease of Grabbable
 
     type HandState = 
         | Open
         | Holding of Grabbable
         | Releasing of Grabbable
+        | ForceReleasing of Grabbable
+        | Regrabbing of Grabbable
         | EmptyFist
 
     let triggerGripDown handState grabbable = 
         match handState, grabbable with
         | Open, Some g -> Holding g, Some (Grab g)
         | Open, None -> EmptyFist, None
-        | Holding g, _ -> Holding g, None
-        | EmptyFist, _ -> EmptyFist, None
-        | Releasing g, _ -> Releasing g, None
+        | s, _ -> raise (System.InvalidOperationException($"Invalid state transition in triggerGripDown, state {s}"))
 
     let triggerGripUp handState = 
         match handState with 
-        | Open -> Open, None
         | Holding g -> Releasing g, Some (Release g)
         | EmptyFist -> Open, None
-        | Releasing g -> Releasing g, None
+        | s -> raise (System.InvalidOperationException($"Invalid state transition in triggerGripUp, state {s}"))
 
     let releaseFinished handState = 
         match handState with
         | Releasing g -> Open
-        | _ -> raise (System.ArgumentException($"Unexpected relaseFinished trigger in state {handState}"))
+        | ForceReleasing g -> Regrabbing g
+        | s -> raise (System.InvalidOperationException($"Invalid state transition in relaseFinished, state {s}"))
+
+    let forceRelease handState = 
+        match handState with
+        | Holding g -> ForceReleasing g, ForceRelease g
+        | s -> raise (System.InvalidOperationException($"Invalid state transition in forceRelease, state {s}"))
+
+    let tryRegrab handState = 
+        match handState with 
+        | Regrabbing g -> EmptyFist
+        | s -> s
 
 
 type HandBehaviour() = 
@@ -49,13 +61,43 @@ type HandBehaviour() =
     val mutable private grabbable : Grabbable
     let mutable handState = HandState.Open
     let maybeGrabbable g = if g = Unchecked.defaultof<Grabbable> then None else Some g
+    let findBestGrabbable (go : GameObject) =
+        let candidates = go.GetComponentsInParent<Grabbable>()
+        if candidates |> Array.exists (fun g -> g.IsHeld)
+        then candidates |> Array.tryHead
+        else candidates |> Array.tryLast
+    let selectHighlightLayer isHighlighted (hand : Hand) =
+        match (isHighlighted, hand) with
+        | (false, _) -> Utils.Layer.Default
+        | (_, Hand.Left) -> Utils.Layer.GrabbableHighlightL
+        | (_, Hand.Right) -> Utils.Layer.GrabbableHighlightR
+        |> int
+    let setLayerForObjectAndDescendants (g : Grabbable) highlightLayer =
+        if g <> Unchecked.defaultof<Grabbable>
+        then
+            for go in g.gameObject.DescendantsAndSelf() do
+                go.layer <- highlightLayer
+    interface IGrabber with
+        member this.ForceRelease() = 
+            let hs, action = HandState.forceRelease handState
+            handState <- hs
+            match action with
+            | HandState.ForceRelease g -> 
+                g.Release(this)
+                handState <- HandState.releaseFinished handState
+            | _ -> raise (System.InvalidOperationException("Unexpected action in ForceRelease"))
     [<ShowNativeProperty>]
     member private this.HandState = handState.ToString()
+    member private this.Update() =
+        let hs = HandState.tryRegrab handState
+        handState <- hs
     member public this.OnTriggerGripDown() = 
         let hs, action = HandState.triggerGripDown handState (maybeGrabbable this.grabbable)
         handState <- hs
         match action with
         | Some (HandState.Grab g) -> 
+            if g.IsHeld then g.ForceRelease()
+            g.Grab(this)
             g.transform.SetParent(this.gameObject.transform, true)
             let rb = g.GetComponent<Rigidbody>()
             GameObject.Destroy(rb)
@@ -67,6 +109,7 @@ type HandBehaviour() =
         handState <- hs
         match action with
         | Some (HandState.Release g) -> 
+            g.Release(this)
             g.transform.SetParent(null, true)
             let rb = g.gameObject.AddComponent<Rigidbody>()
             rb.isKinematic <- true
@@ -78,13 +121,15 @@ type HandBehaviour() =
     member public this.UpdateBestGrabCandidate(colliders: HashSet<Collider>) =
         let candidates = 
             colliders
-            |> Seq.map (fun x -> x.GetComponentInParent<Grabbable>())
-            |> Seq.filter (fun x -> x <> Unchecked.defaultof<Grabbable>)
+            |> Seq.map (fun x -> x.gameObject)
+            |> Seq.map findBestGrabbable
+            |> Seq.filter Option.isSome
+            |> Seq.map Option.get
         let newBest = if Seq.isEmpty candidates then Unchecked.defaultof<Grabbable> else Seq.head candidates
-        if (this.grabbable <> newBest) && (this.grabbable <> Unchecked.defaultof<Grabbable>)
-        then this.grabbable.gameObject.layer <- Utils.Layer.Default |> int
-        this.grabbable <- if Seq.isEmpty candidates then Unchecked.defaultof<Grabbable> else Seq.head candidates
-        if this.grabbable <> Unchecked.defaultof<Grabbable>
-        then this.grabbable.gameObject.layer <- (match this.hand with | Hand.Left -> Utils.Layer.GrabbableHighlightL | Hand.Right -> Utils.Layer.GrabbableHighlightR) |> int
+        if (this.grabbable <> newBest)
+        then
+            setLayerForObjectAndDescendants this.grabbable (selectHighlightLayer false this.hand)
+        this.grabbable <- newBest
+        setLayerForObjectAndDescendants this.grabbable (selectHighlightLayer true this.hand)
         // Debug.Log($"UpdateBestGrabCandidate() - grabbable = {this.grabbable}")
         ()

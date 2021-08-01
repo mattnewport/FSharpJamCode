@@ -7,6 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="IGrabber.fs" />
     <Compile Include="Utils.fs" />
     <Compile Include="Grabbable.fs" />
     <Compile Include="HandBehaviour.fs" />
@@ -16,6 +17,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Reference Include="LINQtoGameObject">
+      <HintPath>..\FSharpJam\Library\ScriptAssemblies\LINQtoGameObject.dll</HintPath>
+    </Reference>
     <Reference Include="NaughtyAttributes.Core">
       <HintPath>..\FSharpJam\Library\ScriptAssemblies\NaughtyAttributes.Core.dll</HintPath>
     </Reference>
