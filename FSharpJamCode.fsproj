@@ -7,9 +7,13 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="IGrabber.fs" />
     <Compile Include="Utils.fs" />
+    <Compile Include="IGrabber.fs" />
     <Compile Include="Grabbable.fs" />
+    <Compile Include="IAttachmentSystem.fs" />
+    <Compile Include="AttachPoint.fs" />
+    <Compile Include="AttachTarget.fs" />
+    <Compile Include="AttachmentSystem.fs" />
     <Compile Include="HandBehaviour.fs" />
     <Compile Include="GrabTrigger.fs" />
     <Compile Include="FSharpMonoBehaviour.fs" />
