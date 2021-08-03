@@ -12,6 +12,7 @@
     <Compile Include="Grabbable.fs" />
     <Compile Include="IAttachmentSystem.fs" />
     <Compile Include="AttachPoint.fs" />
+    <Compile Include="AttachSocket.fs" />
     <Compile Include="AttachTarget.fs" />
     <Compile Include="AttachmentSystem.fs" />
     <Compile Include="HandBehaviour.fs" />

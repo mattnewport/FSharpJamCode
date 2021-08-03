@@ -5,21 +5,25 @@ open UnityEngine
 type AttachTarget() = 
     inherit MonoBehaviour()
     let mutable attachmentSystem = Unchecked.defaultof<IAttachmentSystem>
+    [<DefaultValue; SerializeField>]
+    val mutable private attachSocket : AttachSocket
     member this.Start() =
         let attachmentSystemGo = GameObject.Find("AttachmentSystem")
         attachmentSystem <- attachmentSystemGo.GetComponent<IAttachmentSystem>()
-    member this.OnTriggerEnter(other: Collider) = 
+    member private this.RegisterCollider (other : Collider) = 
         let attachPoint = other.GetComponent<AttachPoint>()
-        if attachPoint <> Unchecked.defaultof<AttachPoint>
+        if attachPoint <> Unchecked.defaultof<AttachPoint> && this.attachSocket = Unchecked.defaultof<AttachSocket>
         then
             attachmentSystem.RegisterAttachCandidatePair Time.frameCount this.gameObject attachPoint.gameObject
+    member this.SetAttachSocket(attachSocket : AttachSocket) = 
+        this.attachSocket <- attachSocket
+        Debug.Log("SetAttachSocket")
+    member this.OnTriggerEnter(other: Collider) = 
+        this.RegisterCollider other
         // Debug.Log($"OnTriggerEnter({other.gameObject.name}), Colliders: {this.Colliders}")
         ()
     member this.OnTriggerStay(other: Collider) = 
-        let attachPoint = other.GetComponent<AttachPoint>()
-        if attachPoint <> Unchecked.defaultof<AttachPoint>
-        then
-            attachmentSystem.RegisterAttachCandidatePair Time.frameCount this.gameObject attachPoint.gameObject
+        this.RegisterCollider other
         ()
     member this.OnTriggerExit(other: Collider) =
         // colliders.Remove(other) |> ignore

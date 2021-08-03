@@ -5,6 +5,7 @@ open UniRx
 open System.Collections.Generic
 open NaughtyAttributes
 open Unity.Linq
+open System.Linq
 
 type Hand = 
 | Left = 0
@@ -75,8 +76,8 @@ type HandBehaviour() =
     let setLayerForObjectAndDescendants (g : Grabbable) highlightLayer =
         if g <> Unchecked.defaultof<Grabbable>
         then
-            for go in g.gameObject.DescendantsAndSelf() do
-                go.layer <- highlightLayer
+            for mf in g.gameObject.GetComponentsInChildren<MeshFilter>() do
+                mf.gameObject.layer <- highlightLayer
     interface IGrabber with
         member this.ForceRelease() = 
             let hs, action = HandState.forceRelease handState
@@ -96,13 +97,19 @@ type HandBehaviour() =
         handState <- hs
         match action with
         | Some (HandState.Grab g) -> 
+            if g.transform.parent <> Unchecked.defaultof<Transform>
+            then 
+                let attachSocket = g.transform.parent.gameObject.GetComponent<AttachSocket>()
+                if attachSocket <> Unchecked.defaultof<AttachSocket> then GameObject.Destroy(attachSocket.gameObject)
+                let attachTarget = g.GetComponentInParent<AttachTarget>()
+                if attachTarget <> Unchecked.defaultof<AttachTarget> then attachTarget.SetAttachSocket(Unchecked.defaultof<AttachSocket>)
             if g.IsHeld then g.ForceRelease()
             g.Grab(this)
             g.transform.SetParent(this.gameObject.transform, true)
             let rb = g.GetComponent<Rigidbody>()
             GameObject.Destroy(rb)
         | _ -> ()
-        Debug.Log($"OnTriggerGripDown() {this.hand}")
+        // Debug.Log($"OnTriggerGripDown() {this.hand}")
         ()
     member public this.OnTriggerGripUp() = 
         let hs, action = HandState.triggerGripUp handState
@@ -116,7 +123,7 @@ type HandBehaviour() =
             rb.useGravity <- false
             handState <- HandState.releaseFinished handState
         | _ -> ()
-        Debug.Log($"OnTriggerGripUp() {this.hand}")
+        // Debug.Log($"OnTriggerGripUp() {this.hand}")
         ()
     member public this.UpdateBestGrabCandidate(colliders: HashSet<Collider>) =
         let candidates = 
