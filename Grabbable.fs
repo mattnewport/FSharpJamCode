@@ -5,6 +5,8 @@ open UnityEngine
 type Grabbable() = 
     inherit MonoBehaviour()
     let mutable heldBy : IGrabber option = None
+    let mutable lastHeldTime = System.Single.MinValue
+    member public this.LastHeldTime = lastHeldTime
     member public this.IsHeld = Option.isSome heldBy
     member public this.ForceRelease() =
         match heldBy with
@@ -14,3 +16,4 @@ type Grabbable() =
         heldBy <- Some grabber
     member public this.Release(grabber : IGrabber) = 
         heldBy <- None
+        lastHeldTime <- Time.time

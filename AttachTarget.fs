@@ -7,6 +7,8 @@ type AttachTarget() =
     let mutable attachmentSystem = Unchecked.defaultof<IAttachmentSystem>
     [<DefaultValue; SerializeField>]
     val mutable private attachSocket : AttachSocket
+    [<DefaultValue; SerializeField>]
+    val mutable private axes : GameObject
     member this.Start() =
         let attachmentSystemGo = GameObject.Find("AttachmentSystem")
         attachmentSystem <- attachmentSystemGo.GetComponent<IAttachmentSystem>()
