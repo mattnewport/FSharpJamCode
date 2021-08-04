@@ -5,6 +5,8 @@ open UnityEngine
 type AttachTarget() = 
     inherit MonoBehaviour()
     let mutable attachmentSystem = Unchecked.defaultof<IAttachmentSystem>
+    let mutable lastPreferredCandidateTime = System.Single.MinValue
+    member public this.SetLastPreferredCandidateTime t = lastPreferredCandidateTime <- t
     [<DefaultValue; SerializeField>]
     val mutable private attachSocket : AttachSocket
     [<DefaultValue; SerializeField>]
@@ -12,6 +14,8 @@ type AttachTarget() =
     member this.Start() =
         let attachmentSystemGo = GameObject.Find("AttachmentSystem")
         attachmentSystem <- attachmentSystemGo.GetComponent<IAttachmentSystem>()
+    member this.Update() =
+        this.axes.SetActive(Time.time - lastPreferredCandidateTime < 0.33f)
     member private this.RegisterCollider (other : Collider) = 
         let attachPoint = other.GetComponent<AttachPoint>()
         if attachPoint <> Unchecked.defaultof<AttachPoint> && this.attachSocket = Unchecked.defaultof<AttachSocket>
