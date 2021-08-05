@@ -49,7 +49,7 @@ type AttachmentSystem() =
                 |> Array.head
 
             let grabbable = attachPoint.GetComponentInParent<Grabbable>()
-            Debug.Log($"Frame: {frame}; Attaching attach candidate pair: ({attachTarget.name}, {attachPoint.name})")
+            // Debug.Log($"Frame: {frame}; Attaching attach candidate pair: ({attachTarget.name}, {attachPoint.name})")
             GameObject.Destroy(grabbable.GetComponent<Rigidbody>())
             grabbable.transform.SetParent(null)
             grabbable.transform.localPosition <- Vector3.zero

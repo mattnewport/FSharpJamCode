@@ -18,8 +18,8 @@
     <Compile Include="AttachmentSystem.fs" />
     <Compile Include="HandBehaviour.fs" />
     <Compile Include="GrabTrigger.fs" />
-    <Compile Include="FSharpMonoBehaviour.fs" />
     <Compile Include="Library.fs" />
+    <Compile Include="Recycle.fs" />
   </ItemGroup>
 
   <ItemGroup>

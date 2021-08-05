@@ -23,7 +23,7 @@ type AttachTarget() =
             attachmentSystem.RegisterAttachCandidatePair Time.frameCount this.gameObject attachPoint.gameObject
     member this.SetAttachSocket(attachSocket : AttachSocket) = 
         this.attachSocket <- attachSocket
-        Debug.Log("SetAttachSocket")
+        // Debug.Log("SetAttachSocket")
     member this.OnTriggerEnter(other: Collider) = 
         this.RegisterCollider other
         // Debug.Log($"OnTriggerEnter({other.gameObject.name}), Colliders: {this.Colliders}")

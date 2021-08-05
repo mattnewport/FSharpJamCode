@@ -77,7 +77,9 @@ type HandBehaviour() =
         if g <> Unchecked.defaultof<Grabbable>
         then
             for mf in g.gameObject.GetComponentsInChildren<MeshFilter>() do
-                mf.gameObject.layer <- highlightLayer
+                if mf.gameObject.layer <> highlightLayer then
+                    // Debug.Log($"SetLayer {highlightLayer} for {mf.gameObject.name}")
+                    mf.gameObject.layer <- highlightLayer
     interface IGrabber with
         member this.ForceRelease() = 
             let hs, action = HandState.forceRelease handState
@@ -125,7 +127,7 @@ type HandBehaviour() =
         | _ -> ()
         // Debug.Log($"OnTriggerGripUp() {this.hand}")
         ()
-    member public this.UpdateBestGrabCandidate(colliders: HashSet<Collider>) =
+    member public this.UpdateBestGrabCandidate(colliders: Collider seq) =
         let candidates = 
             colliders
             |> Seq.map (fun x -> x.gameObject)
